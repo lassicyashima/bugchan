@@ -45,7 +45,7 @@
     // ViewDidLoad is called Only Once on First.
     [super viewDidLoad];
     
-    self.title = @"スケジョール";
+    self.title = @"スケジュール";
     NSDate *now = [NSDate date];
     calendar = [NSCalendar currentCalendar];
     dateComp = [calendar components:NSYearCalendarUnit | NSMonthCalendarUnit | NSDayCalendarUnit
@@ -57,13 +57,14 @@
     id obj = [[UIApplication sharedApplication] delegate];
     self.managedObjectContext = [obj managedObjectContext];
     self.schedule = @{}.mutableCopy;
+    [self setScheduleFromCoreData];
 }
 
 #pragma mark - TableView Dalegate and DataSouce
 
 -(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
-    return [NSString stringWithFormat:@"%d月", self.days];
+    return [NSString stringWithFormat:@"%d月", [dateComp month]];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -106,12 +107,16 @@
 forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSInteger day = indexPath.row + 1;
+    UILabel *dateLabel   = (UILabel *)[cell viewWithTag:1];
+    UILabel *actionLabel = (UILabel *)[cell viewWithTag:2];
     if ([today isEqualToDateWithMonth:[dateComp month] day:day]) {
-        UILabel *dateLabel   = (UILabel *)[cell viewWithTag:1];
-        UILabel *actionLabel = (UILabel *)[cell viewWithTag:2];
         dateLabel.textColor   = [UIColor whiteColor];
         actionLabel.textColor = [UIColor whiteColor];
         cell.backgroundColor  = [UIColor redColor];
+    } else {
+        dateLabel.textColor   = [UIColor blackColor];
+        actionLabel.textColor = [UIColor blackColor];
+        cell.backgroundColor  = [UIColor whiteColor];
     }
 }
 
@@ -131,6 +136,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
                                           cancelButtonTitle:@"キャンセル"
                                           otherButtonTitles:@"OK", nil];
     [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
+    [[alert textFieldAtIndex:0] setText:self.schedule[str]];
     [alert show];
 }
 
@@ -176,10 +182,15 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)addButtonTouched:(id)sender
 {
+    if (self.popController != nil) {
+        return;
+    }
+    
     NSString *storyboardFile = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UIMainStoryboardFile"];
     MyPopOverViewController *controller = [[UIStoryboard storyboardWithName:storyboardFile bundle:nil] instantiateViewControllerWithIdentifier:@"MyPopOverView"];
     controller.delegate = self;
     self.popController = [[UIPopoverController alloc] initWithContentViewController:controller];
+    self.popController.delegate = self;
     [self.popController presentPopoverFromBarButtonItem:sender
                                permittedArrowDirections:UIPopoverArrowDirectionAny
                                                animated:YES];
@@ -191,11 +202,19 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSLog(@"touched button:button%d"  , button.tag);
     [self.popController dismissPopoverAnimated:YES];
+    self.popController = nil;
     
     [dateComp setMonth:button.tag];
     self.days = [calendar rangeOfUnit:NSDayCalendarUnit inUnit:NSMonthCalendarUnit forDate:[calendar dateFromComponents:dateComp]].length;
     [dateComp setDay:rand() % self.days];
     [self.tableView reloadData];
+}
+
+#pragma mark - PopOverViewContorollerDelegate Method
+
+- (void)popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
+{
+    self.popController = nil;
 }
 
 #pragma mark - Core Data
