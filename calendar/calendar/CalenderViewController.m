@@ -45,7 +45,7 @@
     // ViewDidLoad is called Only Once on First.
     [super viewDidLoad];
     
-    self.title = @"スケジョール";
+    self.title = @"スケジュール";
     NSDate *now = [NSDate date];
     calendar = [NSCalendar currentCalendar];
     dateComp = [calendar components:NSYearCalendarUnit | NSMonthCalendarUnit | NSDayCalendarUnit
